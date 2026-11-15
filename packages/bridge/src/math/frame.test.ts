@@ -183,6 +183,36 @@ describe('buildFrame + correct', () => {
     expect(res.ok).toBe(false);
   });
 
+  it('rejects a three-point capture whose left lean is mirrored', () => {
+    // Source position X has the wrong sign: the user leans left, the data says right. Without the
+    // guard, u = f × l comes out pointing down and the avatar's up/down is reversed.
+    const r = rig({ yaw: 20, pitch: 5, roll: 0 });
+    const mirror = (p: Vec3): Vec3 => [-p[0], p[1], p[2]];
+    const res = buildFrame(
+      mirror(r.toPhone([0, 0, 0])),
+      mirror(r.toPhone([0, 0, 0.1])),
+      mirror(r.toPhone([0.08, 0, 0])),
+      { minLeanDistance: 0.05 },
+    );
+    expect(res.ok).toBe(false);
+    expect(!res.ok && res.reason).toMatch(/mirrored/);
+  });
+
+  it('accepts a three-point capture with the phone in portrait or landscape (±90° roll)', () => {
+    for (const roll of [90, -90]) {
+      const r = rig({ yaw: 20, pitch: 5, roll });
+      const res = buildFrame(
+        r.toPhone([0, 0, 0]),
+        r.toPhone([0, 0, 0.1]),
+        r.toPhone([0.08, 0, 0]),
+        {
+          minLeanDistance: 0.05,
+        },
+      );
+      expect(res.ok).toBe(true);
+    }
+  });
+
   it('rejects a left lean parallel to the forward lean', () => {
     const res = buildFrame([0, 0, 0.5], [0, 0, 0.4], [0, 0, 0.38], { minLeanDistance: 0.05 });
     expect(res.ok).toBe(false);

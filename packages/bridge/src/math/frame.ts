@@ -2,7 +2,7 @@ import type { Euler, Mat3, Placement, Quat, Vec3 } from '@offaxis/shared';
 import { quatToEuler } from './euler.js';
 import { fromRows, mul as mulMat, mulVec, transpose } from './mat3.js';
 import { conj, fromMat3, IDENTITY_Q, mul } from './quat.js';
-import { add, cross, dot, norm, scale, sub } from './vec.js';
+import { add, cross, dot, norm, normalize, scale, sub } from './vec.js';
 
 /**
  * Frames
@@ -95,6 +95,21 @@ export function buildFrame(
     };
   }
   const l = scale(ortho, 1 / orthoNorm);
+  if (p2) {
+    // Handedness check. If the source's position axes are mirrored (one sign wrong), the measured
+    // left lands on the side opposite to where the phone's own axes put it, and u = f × l comes
+    // out pointing down. A rolled phone (portrait/landscape, up to ~±120°) still passes.
+    const predicted = cross(cross(PHONE_RIGHT, f), f);
+    if (norm(predicted) >= minPerp && dot(l, normalize(predicted)) < -0.5) {
+      return {
+        ok: false,
+        leanDistance,
+        reason:
+          'The left lean came out on the right: the phone position data looks mirrored. ' +
+          'Check that you leaned to your left; if so, turn on Settings → Axis flips → source Flip posX and recalibrate.',
+      };
+    }
+  }
   const u = cross(f, l);
   return { ok: true, R: fromRows(l, u, f), leanDistance };
 }

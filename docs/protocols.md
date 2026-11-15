@@ -43,6 +43,10 @@ Source: <https://www.ifacialmocap.com/for-developer/> and the THA3 / UnityIFM pa
   row as "face lost".
 - **UNVERIFIED axis mapping:** canonical = (yaw `ry`, pitch `−rx`, roll `−rz`), position
   (`−tx`, `ty`, `−tz`).
+  - First live report (2026-11-15): three-point calibration came out upside down. That means one
+    position axis is mirrored, most likely X because the front camera is mirrored. Run step 0
+    below to find which axis. If it is X, change the default to `+tx` and recheck the rotation
+    signs.
 
 ## VTube Studio iPhone (output, and optional input)
 
@@ -88,6 +92,21 @@ Source: VNyan docs, "How-To" wiki.
   - +roll tilts the top of the head toward the user's left
 
 ## Live verification checklist
+
+**Step 0: source position axes.** Do this first, on the default placement, using the **Raw**
+column of the Numbers panel. The canonical phone frame is x = right as you see the screen, y = up,
+z = toward you.
+
+| Move | Raw value should | If not, turn on |
+| --- | --- | --- |
+| Lean to your left | X decreases | `source.flip.posX` |
+| Rise up in the chair | Y increases | `source.flip.posY` |
+| Lean toward the phone | Z decreases | `source.flip.posZ` |
+
+A mirrored source axis turns three-point calibration upside down: up is computed as
+forward × left. Calibration now rejects that case with a "looks mirrored" message. In two-point
+mode, a mirrored X instead turns the correction the wrong way.
+
 
 With the identity placement (`default`), check each axis:
 
