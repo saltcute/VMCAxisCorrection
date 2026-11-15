@@ -106,7 +106,7 @@ export function buildFrame(
         leanDistance,
         reason:
           'The left lean came out on the right: the phone position data looks mirrored. ' +
-          'Check that you leaned to your left; if so, turn on Settings → Axis flips → source Flip posX and recalibrate.',
+          'Check that you leaned to your left; if so, turn on Settings → "Axis flips: phone input" → Flip posX and recalibrate.',
       };
     }
   }

@@ -154,9 +154,14 @@ const SECTIONS: { title: string; fields: Field[]; note?: string }[] = [
     ],
   },
   {
-    title: 'Axis flips (advanced)',
-    note: 'Fix a wrong sign found in a live test. See docs/protocols.md for the checklist.',
-    fields: [...flips('source'), ...flips('output')],
+    title: 'Axis flips: phone input (advanced)',
+    note: 'Fix the sign of what the phone sends. Check against the Raw column of the Numbers panel; see docs/protocols.md.',
+    fields: flips('source'),
+  },
+  {
+    title: 'Axis flips: output to VNyan (advanced)',
+    note: 'Fix the sign of what VNyan receives. Only change these after the input flips are right.',
+    fields: flips('output'),
   },
 ];
 
