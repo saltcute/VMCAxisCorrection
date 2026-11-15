@@ -33,7 +33,7 @@ describe('iFacialMocap', () => {
   it('maps the head into the canonical frame', () => {
     const h = ifmHeadToCanonical([10, 20, 30, 0.01, 0.02, -0.5]);
     expect(h.rot).toEqual({ yaw: 20, pitch: -10, roll: -30 });
-    expect(h.pos).toEqual([-0.01, 0.02, 0.5]);
+    expect(h.pos).toEqual([0.01, 0.02, 0.5]);
   });
 });
 

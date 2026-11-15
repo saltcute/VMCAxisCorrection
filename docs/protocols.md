@@ -41,12 +41,10 @@ Source: <https://www.ifacialmocap.com/for-developer/> and the THA3 / UnityIFM pa
   like metres.
 - **Face lost:** iFacialMocap has no flag for this. The bridge treats 20 identical head fields in a
   row as "face lost".
-- **UNVERIFIED axis mapping:** canonical = (yaw `ry`, pitch `−rx`, roll `−rz`), position
-  (`−tx`, `ty`, `−tz`).
-  - First live report (2026-11-15): three-point calibration came out upside down. That means one
-    position axis is mirrored, most likely X because the front camera is mirrored. Run step 0
-    below to find which axis. If it is X, change the default to `+tx` and recheck the rotation
-    signs.
+- **Axis mapping:**
+  - Position is (`tx`, `ty`, `−tz`). X was **verified live** on 2026-11-15: with `−tx`, three-point
+    calibration came out upside down, and flipping X fixed it.
+  - Rotation is (yaw `ry`, pitch `−rx`, roll `−rz`). This is still **UNVERIFIED**; see step 0b.
 
 ## VTube Studio iPhone (output, and optional input)
 
@@ -102,6 +100,17 @@ z = toward you.
 | Lean to your left | X decreases | `source.flip.posX` |
 | Rise up in the chair | Y increases | `source.flip.posY` |
 | Lean toward the phone | Z decreases | `source.flip.posZ` |
+
+**Step 0b: source rotation axes.** Check the Raw column again, on the default placement.
+
+| Move | Raw value should | If not, turn on |
+| --- | --- | --- |
+| Turn your head to your left | Yaw increases | `source.flip.yaw` |
+| Look up | Pitch increases | `source.flip.pitch` |
+| Tilt your head toward your left shoulder | Roll increases | `source.flip.roll` |
+
+If any of these is wrong, rotation correction for an off-axis phone will mix the axes up even though
+lean correction works. Report it, so the default mapping can be fixed.
 
 A mirrored source axis turns three-point calibration upside down: up is computed as
 forward × left. Calibration now rejects that case with a "looks mirrored" message. In two-point

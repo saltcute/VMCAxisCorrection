@@ -64,11 +64,11 @@ export function parseIfm(text: string): IfmPacket {
 
 /**
  * iFacialMocap head → canonical phone frame (x right as the user sees the screen, y up, z toward
- * the user). UNVERIFIED best guess: the sample tz ≈ −0.66 suggests the face sits at −z in
- * iFacialMocap's frame, so x and z are negated (a 180° turn about y, keeping handedness), which
- * negates pitch and roll. Fix with `source.flip` if a live test disagrees.
+ * the user). Position: x = tx (verified live 2026-11-15: −tx made three-point calibration come out
+ * upside down), z = −tz (the face sits at −z in iFacialMocap's frame, sample tz ≈ −0.66). Rotation
+ * signs are still UNVERIFIED. Fix with `source.flip` if a live test disagrees.
  */
 export function ifmHeadToCanonical(h: NonNullable<IfmPacket['head']>): HeadPose {
   const [rx, ry, rz, tx, ty, tz] = h;
-  return { rot: { yaw: ry, pitch: -rx, roll: -rz }, pos: [-tx, ty, -tz] };
+  return { rot: { yaw: ry, pitch: -rx, roll: -rz }, pos: [tx, ty, -tz] };
 }
