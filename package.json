@@ -1,0 +1,29 @@
+{
+  "name": "offaxis-bridge-monorepo",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/shared",
+    "packages/bridge",
+    "packages/web"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "concurrently -n bridge,web -c cyan,magenta \"npm run dev -w @offaxis/bridge\" \"npm run dev -w @offaxis/web\"",
+    "build": "npm run build -w @offaxis/shared && npm run build -w @offaxis/web && npm run build -w @offaxis/bridge",
+    "start": "npm run start -w @offaxis/bridge",
+    "test": "vitest run",
+    "typecheck": "npm run typecheck --workspaces",
+    "lint": "biome check .",
+    "format": "biome check --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.8",
+    "@types/node": "^22.0.0",
+    "concurrently": "^10.0.7",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}

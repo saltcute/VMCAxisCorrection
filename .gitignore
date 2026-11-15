@@ -1,0 +1,8 @@
+node_modules/
+dist/
+public/
+data/
+config.json
+placements.json
+*.log
+.DS_Store
