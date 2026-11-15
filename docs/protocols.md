@@ -67,8 +67,11 @@ facetrack-d.
   - With `x` = pitch, VNyan showed head turns as nods.
   - With `y` = +pitch, looking up made the avatar look down.
   - The yaw and roll signs are still **UNVERIFIED**.
-- **Position:** **UNVERIFIED** centimetres. Android emulators send cm, and `output.positionScale`
-  multiplies on top. The axis signs are **UNVERIFIED** too.
+- **Position:** centimetres, which is **UNVERIFIED**. Android emulators send cm, and
+  `output.positionScale` multiplies on top.
+  - `x` = −canonical x, mirrored like a selfie view. **Verified live** in VNyan on 2026-11-15: with
+    +x, leaning left moved the avatar right.
+  - The `y` and `z` signs are still **UNVERIFIED**.
 - **Which port VNyan puts in `ports`:** not known. The bridge reads it from each request.
 
 ## VNyan WebSocket triggers

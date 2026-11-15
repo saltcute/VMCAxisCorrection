@@ -97,6 +97,8 @@ describe('loopback: fake iFacialMocap phone → bridge → fake VNyan', () => {
     expect(frame.Rotation.x).toBeCloseTo(20, 6);
     expect(frame.Rotation.y).toBeCloseTo(10, 6);
     expect(frame.Rotation.z).toBeCloseTo(5, 6);
+    // iFM tx = 0.01 → canonical x = 0.01 m → VTS Position.x = −1 cm (mirrored).
+    expect(frame.Position.x).toBeCloseTo(-1, 6);
     expect(frame.Position.z).toBeCloseTo(55, 6);
     expect(frame.EyeLeft).toEqual({ x: 4, y: 5, z: 6 });
   });
