@@ -5,15 +5,26 @@ import { norm, sub } from '../math/vec.js';
 
 export class Alerts extends EventEmitter<{ raised: [Alert] }> {
   private active = new Map<AlertId, Alert>();
+  /** Dismissed alerts stay hidden until their condition clears. */
+  private dismissed = new Set<AlertId>();
 
   raise(alert: Alert): void {
+    if (this.dismissed.has(alert.id)) return;
     const had = this.active.has(alert.id);
     this.active.set(alert.id, alert);
     if (!had) this.emit('raised', alert);
   }
 
+  /** The condition is gone. */
   clear(id: AlertId): void {
     this.active.delete(id);
+    this.dismissed.delete(id);
+  }
+
+  /** The user hid it; don't raise again until the condition clears. */
+  dismiss(id: AlertId): void {
+    this.active.delete(id);
+    this.dismissed.add(id);
   }
 
   list(): Alert[] {

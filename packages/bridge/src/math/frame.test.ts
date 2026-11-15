@@ -138,17 +138,20 @@ describe('buildFrame + correct', () => {
     expectVec(out.userPos, [0, 0, 0.12]);
   });
 
-  it('emits the pose a straight-on phone would report', () => {
+  it('emits the pose a straight-on phone at the same distance would report', () => {
     const r = rig({ yaw: 30, pitch: 15, roll: 0 });
     const corr = calibrate(r, false);
-    const straight = rig({ yaw: 0, pitch: 0, roll: 0 });
+    const qS = fromMat3(R_STRAIGHT);
+    const dist = Math.hypot(...r.restInPhone);
+    // At rest: head centred in front of the virtual phone, facing it.
+    const rest = correct(corr, r.toPhone([0, 0, 0]), r.rotToPhone([0, 0, 0, 1]));
+    expectVec(rest.phonePos, [0, 0, dist]);
+    expectRot(rest.phoneRot, [0, 0, 0, 1]);
+    // Leaning forward 6 cm moves the head 6 cm toward the virtual phone (−z), nothing else.
     const g = eulerToQuat({ yaw: 12, pitch: -7, roll: 3 });
     const out = correct(corr, r.toPhone([0.02, 0.01, 0.06]), r.rotToPhone(g));
-    // A straight phone at the same distance, with the user at rest facing it.
-    const restDist = mulVec(corr.Rv, r.restInPhone);
-    const expectedPos = add(mulVec(transpose(R_STRAIGHT), [0.02, 0.01, 0.06]), restDist);
-    expectVec(out.phonePos, expectedPos);
-    expectRot(out.phoneRot, mul(mul(conj(fromMat3(straight.R)), g), fromMat3(straight.R)));
+    expectVec(out.phonePos, [-0.02, 0.01, dist - 0.06]);
+    expectRot(out.phoneRot, mul(mul(conj(qS), g), qS));
   });
 
   it('identity placement is an exact passthrough', () => {

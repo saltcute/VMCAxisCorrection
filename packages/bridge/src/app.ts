@@ -1,5 +1,13 @@
 import { EventEmitter } from 'node:events';
-import type { BridgeEvent, ClientMessage, Config, ServerMessage, Snapshot } from '@offaxis/shared';
+import type {
+  BridgeEvent,
+  ClientMessage,
+  Config,
+  PlotFrame,
+  ServerMessage,
+  Snapshot,
+  Vec3,
+} from '@offaxis/shared';
 import { Alerts, PhoneMovedDetector } from './alerts/alerts.js';
 import { Calibrator } from './calibration/calibrator.js';
 import type { ConfigStore } from './config.js';
@@ -40,6 +48,8 @@ export class App extends EventEmitter<AppEvents> {
   private readonly hotkey: GlobalHotkey;
   private readonly vnyan: VnyanTriggers;
   private watchdog: NodeJS.Timeout | null = null;
+  /** Slow running mean of head position, used to centre the plots before calibration. */
+  private plotNeutral: Vec3 | null = null;
   private startedAt = Date.now();
 
   constructor(
@@ -125,7 +135,9 @@ export class App extends EventEmitter<AppEvents> {
           this.placements.delete(msg.name);
           return { ok: true };
         case 'dismissAlert':
-          this.alerts.clear(msg.id);
+          // phoneMoved is a one-off hint, so clearing it is enough; the others are conditions.
+          if (msg.id === 'phoneMoved') this.alerts.clear(msg.id);
+          else this.alerts.dismiss(msg.id);
           return { ok: true };
         case 'updateConfig': {
           const res = this.config.update(msg.patch);
@@ -185,13 +197,16 @@ export class App extends EventEmitter<AppEvents> {
     };
   }
 
-  private plotFrame(f: ProcessedFrame) {
+  private plotFrame(f: ProcessedFrame): PlotFrame {
     const c = this.pipeline.getCorrector();
-    const phone = phoneInUserFrame(c);
+    const uncalibrated = c.placement.p0.every((v) => v === 0);
+    // Uncalibrated placements have no neutral pose; centre on where the head usually is.
+    const neutral = uncalibrated ? (this.plotNeutral ?? f.frame.head.pos) : c.placement.p0;
+    const phone = phoneInUserFrame(c, neutral);
     return {
       // What the stream would look like uncorrected: the phone treated as straight-on.
-      raw: mulVec(R_STRAIGHT, sub(f.frame.head.pos, c.placement.p0)),
-      corrected: f.corrected.userPos,
+      raw: mulVec(R_STRAIGHT, sub(f.frame.head.pos, neutral)),
+      corrected: mulVec(c.R, sub(f.frame.head.pos, neutral)),
       phonePos: phone.pos,
       phoneFacing: phone.facing,
     };
@@ -199,6 +214,14 @@ export class App extends EventEmitter<AppEvents> {
 
   private onFrame(f: ProcessedFrame) {
     const { frame } = f;
+    if (frame.faceFound) {
+      const p = frame.head.pos;
+      const n = this.plotNeutral;
+      // ~5 s time constant at 60 fps.
+      this.plotNeutral = n
+        ? [n[0] + (p[0] - n[0]) / 300, n[1] + (p[1] - n[1]) / 300, n[2] + (p[2] - n[2]) / 300]
+        : p;
+    }
     this.calibrator.push({
       t: frame.t,
       pos: frame.head.pos,

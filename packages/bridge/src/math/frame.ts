@@ -2,7 +2,7 @@ import type { Euler, Mat3, Placement, Quat, Vec3 } from '@offaxis/shared';
 import { quatToEuler } from './euler.js';
 import { fromRows, mul as mulMat, mulVec, transpose } from './mat3.js';
 import { conj, fromMat3, IDENTITY_Q, mul } from './quat.js';
-import { cross, dot, norm, scale, sub } from './vec.js';
+import { add, cross, dot, norm, scale, sub } from './vec.js';
 
 /**
  * Frames
@@ -16,6 +16,7 @@ import { cross, dot, norm, scale, sub } from './vec.js';
 /** R for a phone directly in front of the user, facing them: a 180° turn about y. */
 export const R_STRAIGHT: Mat3 = [-1, 0, 0, 0, 1, 0, 0, 0, -1];
 export const Q_STRAIGHT: Quat = fromMat3(R_STRAIGHT);
+const R_STRAIGHT_T: Mat3 = transpose(R_STRAIGHT);
 
 export const PHONE_RIGHT: Vec3 = [1, 0, 0];
 
@@ -98,8 +99,8 @@ export interface Corrector {
   placement: Placement;
   R: Mat3;
   qR: Quat;
-  /** R_straightᵀ · R: maps a real phone-frame position to the virtual straight-on phone. */
-  Rv: Mat3;
+  /** Where the neutral head sits for the virtual straight-on phone: (0, 0, |P0|). */
+  virtualRest: Vec3;
 }
 
 export function makeCorrector(placement: Placement): Corrector {
@@ -108,7 +109,7 @@ export function makeCorrector(placement: Placement): Corrector {
     placement,
     R: placement.R,
     qR,
-    Rv: mulMat(transpose(R_STRAIGHT), placement.R),
+    virtualRest: [0, 0, norm(placement.p0)],
   };
 }
 
@@ -124,10 +125,10 @@ export interface CorrectedPose {
 }
 
 /**
- * Correct one frame. The emitted pose is what a phone placed straight in front of the user would
- * report: position R_straightᵀ·R·p (so the rest distance is kept) and rotation
- * q_straight⁻¹ · D · q_straight. The identity placement (R = R_straight, P0 = 0, H0 = 1) is an
- * exact passthrough.
+ * Correct one frame. The emitted pose is what a phone straight in front of the user, at the same
+ * distance as the real one, would report: position R_straightᵀ·p' + (0, 0, |P0|) and rotation
+ * q_straight⁻¹ · D · q_straight. At rest that is the head centred and facing the phone. The
+ * identity placement (R = R_straight, P0 = 0, H0 = 1) is an exact passthrough.
  */
 export function correct(c: Corrector, pos: Vec3, rot: Quat): CorrectedPose {
   const userPos = correctPosition(c.R, c.placement.p0, pos);
@@ -135,7 +136,7 @@ export function correct(c: Corrector, pos: Vec3, rot: Quat): CorrectedPose {
   return {
     userPos,
     userRot,
-    phonePos: mulVec(c.Rv, pos),
+    phonePos: add(mulVec(R_STRAIGHT_T, userPos), c.virtualRest),
     phoneRot: mul(mul(conj(Q_STRAIGHT), userRot), Q_STRAIGHT),
   };
 }
@@ -163,9 +164,12 @@ export function phoneOffset(R: Mat3): Euler {
 }
 
 /** Phone position and camera direction in the user frame, relative to the neutral head. */
-export function phoneInUserFrame(c: Corrector): { pos: Vec3; facing: Vec3 } {
+export function phoneInUserFrame(
+  c: Corrector,
+  neutral: Vec3 = c.placement.p0,
+): { pos: Vec3; facing: Vec3 } {
   return {
-    pos: mulVec(c.R, scale(c.placement.p0, -1)),
+    pos: mulVec(c.R, scale(neutral, -1)),
     facing: mulVec(c.R, [0, 0, 1]),
   };
 }

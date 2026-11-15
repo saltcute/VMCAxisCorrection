@@ -12,5 +12,6 @@ export default defineConfig({
       '/ws': { target: bridge.replace(/^http/, 'ws'), ws: true },
     },
   },
-  build: { outDir: 'dist', emptyOutDir: true },
+  // OBS's dock browser is an older Chromium (CEF), so don't emit the newest syntax.
+  build: { outDir: 'dist', emptyOutDir: true, target: 'chrome95' },
 });

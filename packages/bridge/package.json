@@ -8,7 +8,8 @@
     "dev": "tsx watch --conditions=development src/main.ts",
     "start": "node dist/main.js",
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "simulate": "tsx --conditions=development scripts/simulate.ts"
   },
   "dependencies": {
     "@offaxis/shared": "*",
