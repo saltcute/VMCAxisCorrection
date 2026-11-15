@@ -54,6 +54,10 @@ docker compose up -d --build
 - The container uses host networking: the phone protocols reply to the sender's address, which
   breaks behind NAT.
 - On Unraid, set `PUID: 99` and `PGID: 100`.
+- **Rootless Docker or Docker Desktop:** `network_mode: host` doesn't reach the real network there.
+  1. Publish the ports instead: `8787/tcp` (or your `UI_PORT`), `49983/udp` and `21412/udp`.
+  2. Set `VTS_REPLY_HOST`, or Settings → Output → VNyan IP, to the IP of the PC running VNyan.
+     The NAT hides VNyan's address from the bridge.
 - The UI has no authentication. Keep it on your LAN and never port-forward it.
 
 ## Development
