@@ -39,6 +39,11 @@ export const OutputConfigSchema = z
     mode: z.enum(['vts', 'vmc']).default('vts'),
     /** UDP port the impersonated VTS phone app answers requests on. */
     vtsPort: port.default(21412),
+    /**
+     * Send the VTS stream to this IP instead of the request's sender. Needed when a NAT hides
+     * VNyan's address (published ports under rootless Docker / Docker Desktop). Empty = sender.
+     */
+    vtsReplyHost: z.string().default(''),
     vmcHost: z.string().min(1).default('127.0.0.1'),
     vmcPort: port.default(39540),
     /** Multiplier applied to emitted head position (bridge-internal unit is metres). */

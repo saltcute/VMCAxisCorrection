@@ -47,6 +47,7 @@ export class VtsEmitter implements Emitter {
       return;
     }
     const until = Date.now() + requestSeconds(req.data) * 1000;
+    if (this.cfg.vtsReplyHost) address = this.cfg.vtsReplyHost;
     for (const port of req.data.ports) {
       const key = `${address}:${port}`;
       if (!this.peers.has(key)) {

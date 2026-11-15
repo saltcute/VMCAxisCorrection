@@ -55,6 +55,12 @@ const SECTIONS: { title: string; fields: Field[]; note?: string }[] = [
         hint: 'vts: point VNyan’s “VTube Studio” phone tracker at this bridge. vmc: experimental.',
       },
       { path: 'output.vtsPort', label: 'VTS phone port', kind: 'number', step: 1 },
+      {
+        path: 'output.vtsReplyHost',
+        label: 'VNyan IP (optional)',
+        kind: 'text',
+        hint: 'Leave empty unless the bridge runs behind NAT (Docker with published ports).',
+      },
       { path: 'output.vmcHost', label: 'VMC host', kind: 'text' },
       { path: 'output.vmcPort', label: 'VMC port', kind: 'number', step: 1 },
       { path: 'output.positionScale', label: 'Position scale', kind: 'number', step: 0.1 },

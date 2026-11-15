@@ -29,6 +29,7 @@ export function envOverrides(env: NodeJS.ProcessEnv = process.env): Json {
   if (env.BIND_HOST) server.bindHost = env.BIND_HOST;
   if (env.UI_PORT) server.uiPort = Number(env.UI_PORT);
   if (env.HOTKEY_ENABLED) triggers.hotkeyEnabled = env.HOTKEY_ENABLED === 'true';
+  if (env.VTS_REPLY_HOST) out.output = { vtsReplyHost: env.VTS_REPLY_HOST };
   if (env.LOG_LEVEL) out.logLevel = env.LOG_LEVEL;
   if (Object.keys(server).length) out.server = server;
   if (Object.keys(triggers).length) out.triggers = triggers;

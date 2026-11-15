@@ -102,4 +102,34 @@ describe('loopback: fake iFacialMocap phone → bridge → fake VNyan', () => {
     expect(frame.Position.z).toBeCloseTo(55, 6);
     expect(frame.EyeLeft).toEqual({ x: 4, y: 5, z: 6 });
   });
+
+  it('streams to vtsReplyHost instead of the sender when set (NAT)', async () => {
+    const vtsPort = await freePort();
+    const cfg = defaultConfig();
+    cfg.output.vtsPort = vtsPort;
+    cfg.output.vtsReplyHost = '127.0.0.2';
+    const requester = await bindUdp(0, '127.0.0.1');
+    const target = await bindUdp(requester.address().port, '127.0.0.2');
+    sockets.push(requester, target);
+    const emitter = new VtsEmitter(cfg.output);
+    await emitter.start();
+    cleanups.push(() => emitter.stop());
+
+    const port = requester.address().port;
+    requester.send(
+      JSON.stringify({ messageType: 'iOSTrackingDataRequest', time: 2, ports: [port] }),
+      vtsPort,
+      '127.0.0.1',
+    );
+    await new Promise((r) => setTimeout(r, 50));
+    expect(emitter.status().peers).toEqual([`127.0.0.2:${port}`]);
+    const received = nextMessage(target);
+    emitter.send({
+      head: { rot: { yaw: 0, pitch: 0, roll: 0 }, pos: [0, 0, 0.5] },
+      blendshapes: {},
+      faceFound: true,
+      t: 1,
+    });
+    expect(VtsFrameSchema.parse(JSON.parse((await received).text)).FaceFound).toBe(true);
+  });
 });
