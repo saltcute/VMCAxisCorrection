@@ -62,11 +62,12 @@ facetrack-d.
 - **Response:** JSON sent to the requester's IP on every listed port:
   `{Timestamp, Hotkey, FaceFound, Rotation{x,y,z}, Position{x,y,z}, EyeLeft, EyeRight, BlendShapes:[{k,v}]}`.
   - Blendshape keys are PascalCase ARKit names (`EyeBlinkLeft`), with values 0–1.
-- **Rotation:** degrees, with `x` = yaw, `y` = −pitch, `z` = roll, matching VTube Studio's
+- **Rotation:** degrees, with `x` = −yaw, `y` = −pitch, `z` = roll, matching VTube Studio's
   FaceAngleX/Y/Z. Verified live in VNyan on 2026-11-15:
   - With `x` = pitch, VNyan showed head turns as nods.
   - With `y` = +pitch, looking up made the avatar look down.
-  - The yaw and roll signs are still **UNVERIFIED**.
+  - With `x` = +yaw, turning left turned the avatar the other way.
+  - The roll sign is still **UNVERIFIED**. The mirrored X suggests it should be negated too.
 - **Position:** centimetres, which is **UNVERIFIED**. Android emulators send cm, and
   `output.positionScale` multiplies on top.
   - `x` = −canonical x, mirrored like a selfie view. **Verified live** in VNyan on 2026-11-15: with

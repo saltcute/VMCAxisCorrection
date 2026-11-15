@@ -44,15 +44,16 @@ export type VtsFrame = z.infer<typeof VtsFrameSchema>;
 const VTS_POS_PER_METRE = 100;
 
 /**
- * VTS head ↔ canonical phone frame. Rotation (degrees): x = yaw, y = −pitch, z = roll (as VTube
+ * VTS head ↔ canonical phone frame. Rotation (degrees): x = −yaw, y = −pitch, z = roll (as VTube
  * Studio's FaceAngleX/Y/Z). Position: x = −x (mirrored, like a selfie view), y, z.
  * Verified live in VNyan 2026-11-15: with x = pitch, head turns became nods; with y = +pitch,
- * looking up made the avatar look down; with Position.x = +x, leaning left moved the avatar right.
- * Yaw/roll signs and Position y/z are still UNVERIFIED; fix with `output.flip` / `source.flip`.
+ * looking up made the avatar look down; with Position.x = +x, leaning left moved the avatar right;
+ * with Rotation.x = +yaw, turning left turned the avatar the other way.
+ * Roll sign and Position y/z are still UNVERIFIED; fix with `output.flip` / `source.flip`.
  */
 export function vtsHeadToCanonical(f: VtsFrame): HeadPose {
   return {
-    rot: { yaw: f.Rotation.x, pitch: -f.Rotation.y, roll: f.Rotation.z },
+    rot: { yaw: -f.Rotation.x, pitch: -f.Rotation.y, roll: f.Rotation.z },
     pos: [
       -f.Position.x / VTS_POS_PER_METRE,
       f.Position.y / VTS_POS_PER_METRE,
@@ -63,7 +64,7 @@ export function vtsHeadToCanonical(f: VtsFrame): HeadPose {
 
 export function canonicalToVtsHead(h: HeadPose): Pick<VtsFrame, 'Rotation' | 'Position'> {
   return {
-    Rotation: { x: h.rot.yaw, y: -h.rot.pitch, z: h.rot.roll },
+    Rotation: { x: -h.rot.yaw, y: -h.rot.pitch, z: h.rot.roll },
     Position: {
       x: -h.pos[0] * VTS_POS_PER_METRE,
       y: h.pos[1] * VTS_POS_PER_METRE,
