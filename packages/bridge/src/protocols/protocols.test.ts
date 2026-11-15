@@ -32,7 +32,7 @@ describe('iFacialMocap', () => {
 
   it('maps the head into the canonical frame', () => {
     const h = ifmHeadToCanonical([10, 20, 30, 0.01, 0.02, -0.5]);
-    expect(h.rot).toEqual({ yaw: 20, pitch: -10, roll: -30 });
+    expect(h.rot).toEqual({ yaw: -20, pitch: -10, roll: 30 });
     expect(h.pos).toEqual([0.01, 0.02, 0.5]);
   });
 });
@@ -66,7 +66,7 @@ describe('VTube Studio', () => {
       { k: 'EyeBlinkLeft', v: 0.5 },
       { k: 'JawOpen', v: 0.1 },
     ]);
-    expect(f.Rotation).toEqual({ x: 2, y: 1, z: 3 });
+    expect(f.Rotation).toEqual({ x: 1, y: 2, z: 3 });
   });
 });
 

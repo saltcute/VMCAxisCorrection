@@ -64,11 +64,13 @@ export function parseIfm(text: string): IfmPacket {
 
 /**
  * iFacialMocap head → canonical phone frame (x right as the user sees the screen, y up, z toward
- * the user). Position: x = tx (verified live 2026-11-15: −tx made three-point calibration come out
- * upside down), z = −tz (the face sits at −z in iFacialMocap's frame, sample tz ≈ −0.66). Rotation
- * signs are still UNVERIFIED. Fix with `source.flip` if a live test disagrees.
+ * the user). Verified live 2026-11-15 against the canonical convention in math/euler.ts:
+ * - position (tx, ty, −tz): with −tx, three-point calibration came out upside down;
+ * - rotation yaw = −ry, pitch = −rx, roll = rz: turning left gave −ry, looking up +pitch from −rx,
+ *   tilting toward the left shoulder −rz. iFacialMocap's frame is z-mirrored relative to the
+ *   canonical one, which negates the x and y rotations and keeps z.
  */
 export function ifmHeadToCanonical(h: NonNullable<IfmPacket['head']>): HeadPose {
   const [rx, ry, rz, tx, ty, tz] = h;
-  return { rot: { yaw: ry, pitch: -rx, roll: -rz }, pos: [tx, ty, -tz] };
+  return { rot: { yaw: -ry, pitch: -rx, roll: rz }, pos: [tx, ty, -tz] };
 }

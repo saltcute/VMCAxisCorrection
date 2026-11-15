@@ -44,7 +44,10 @@ Source: <https://www.ifacialmocap.com/for-developer/> and the THA3 / UnityIFM pa
 - **Axis mapping:**
   - Position is (`tx`, `ty`, `−tz`). X was **verified live** on 2026-11-15: with `−tx`, three-point
     calibration came out upside down, and flipping X fixed it.
-  - Rotation is (yaw `ry`, pitch `−rx`, roll `−rz`). This is still **UNVERIFIED**; see step 0b.
+  - Rotation is (yaw `−ry`, pitch `−rx`, roll `rz`), **verified live** on 2026-11-15 with the raw
+    check in step 0b. iFacialMocap's frame is z-mirrored relative to the canonical frame, which
+    negates the x and y rotations and keeps z.
+  - Y and Z position signs follow from the same mirror, but haven't been checked on their own.
 
 ## VTube Studio iPhone (output, and optional input)
 
@@ -59,7 +62,9 @@ facetrack-d.
 - **Response:** JSON sent to the requester's IP on every listed port:
   `{Timestamp, Hotkey, FaceFound, Rotation{x,y,z}, Position{x,y,z}, EyeLeft, EyeRight, BlendShapes:[{k,v}]}`.
   - Blendshape keys are PascalCase ARKit names (`EyeBlinkLeft`), with values 0–1.
-- **Rotation:** degrees, with `x` = pitch, `y` = yaw, `z` = roll. The signs are **UNVERIFIED**.
+- **Rotation:** degrees, with `x` = yaw, `y` = pitch, `z` = roll, matching VTube Studio's
+  FaceAngleX/Y/Z. The axis order was **verified live** on 2026-11-15: with `x` = pitch, VNyan
+  showed head turns as nods. The signs are still **UNVERIFIED**.
 - **Position:** **UNVERIFIED** centimetres. Android emulators send cm, and `output.positionScale`
   multiplies on top. The axis signs are **UNVERIFIED** too.
 - **Which port VNyan puts in `ports`:** not known. The bridge reads it from each request.

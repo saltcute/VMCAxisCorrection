@@ -66,7 +66,7 @@ sock.bind(0, () => {
     const turn = fromAxisAngle([0, 1, 0], 0.15 * Math.sin(t * 0.7));
     const h = quatToEuler(qmul(qmul(qmul(conj(qR), turn), qR), h0));
     // Canonical → iFacialMocap (inverse of ifmHeadToCanonical).
-    const head = [-h.pitch, h.yaw, -h.roll, pos[0], pos[1], -pos[2]].map((v) => v.toFixed(6));
+    const head = [-h.pitch, -h.yaw, h.roll, pos[0], pos[1], -pos[2]].map((v) => v.toFixed(6));
     const blink = Math.round(50 + 50 * Math.sin(t * 3));
     const msg = `eyeBlink_L&${blink}|eyeBlink_R&${blink}|jawOpen&10|=head#${head.join(',')}|rightEye#0,0,0|leftEye#0,0,0|`;
     sock.send(msg, port, values.host);
