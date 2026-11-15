@@ -1,8 +1,9 @@
+import { App } from './app.js';
 import { ConfigStore } from './config.js';
 import { rootLog, setLogLevel } from './log.js';
-import { configDir } from './paths.js';
-import { Pipeline } from './pipeline/pipeline.js';
+import { configDir, publicDir } from './paths.js';
 import { PlacementStore } from './placements.js';
+import { UiServer } from './server/server.js';
 
 const dir = configDir();
 const config = ConfigStore.inDir(dir);
@@ -10,15 +11,33 @@ const placements = PlacementStore.inDir(dir);
 setLogLevel(config.get().logLevel);
 rootLog.info('config loaded', { dir, config: config.get() });
 
-const pipeline = new Pipeline(placements.active());
-placements.on('change', (p) => pipeline.setPlacement(p));
+const app = new App(config, placements);
+const server = new UiServer(app, publicDir());
 
-await pipeline.startSource(config.get().source).catch(() => {});
-await pipeline.startEmitter(config.get().output).catch(() => {});
+await app.start();
+try {
+  await server.start(config.get().server);
+} catch (err) {
+  const { bindHost, uiPort } = config.get().server;
+  rootLog.error(
+    'cannot start the web UI server; is the port in use? Set UI_PORT or server.uiPort.',
+    {
+      host: bindHost,
+      port: uiPort,
+      err: (err as Error).message,
+    },
+  );
+  await app.stop();
+  process.exit(1);
+}
 
+let stopping = false;
 async function shutdown() {
+  if (stopping) return;
+  stopping = true;
   rootLog.info('shutting down');
-  await pipeline.stop();
+  await server.stop();
+  await app.stop();
   process.exit(0);
 }
 process.on('SIGINT', shutdown);
