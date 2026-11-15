@@ -62,9 +62,11 @@ facetrack-d.
 - **Response:** JSON sent to the requester's IP on every listed port:
   `{Timestamp, Hotkey, FaceFound, Rotation{x,y,z}, Position{x,y,z}, EyeLeft, EyeRight, BlendShapes:[{k,v}]}`.
   - Blendshape keys are PascalCase ARKit names (`EyeBlinkLeft`), with values 0–1.
-- **Rotation:** degrees, with `x` = yaw, `y` = pitch, `z` = roll, matching VTube Studio's
-  FaceAngleX/Y/Z. The axis order was **verified live** on 2026-11-15: with `x` = pitch, VNyan
-  showed head turns as nods. The signs are still **UNVERIFIED**.
+- **Rotation:** degrees, with `x` = yaw, `y` = −pitch, `z` = roll, matching VTube Studio's
+  FaceAngleX/Y/Z. Verified live in VNyan on 2026-11-15:
+  - With `x` = pitch, VNyan showed head turns as nods.
+  - With `y` = +pitch, looking up made the avatar look down.
+  - The yaw and roll signs are still **UNVERIFIED**.
 - **Position:** **UNVERIFIED** centimetres. Android emulators send cm, and `output.positionScale`
   multiplies on top. The axis signs are **UNVERIFIED** too.
 - **Which port VNyan puts in `ports`:** not known. The bridge reads it from each request.

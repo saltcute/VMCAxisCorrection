@@ -66,7 +66,7 @@ describe('VTube Studio', () => {
       { k: 'EyeBlinkLeft', v: 0.5 },
       { k: 'JawOpen', v: 0.1 },
     ]);
-    expect(f.Rotation).toEqual({ x: 1, y: 2, z: 3 });
+    expect(f.Rotation).toEqual({ x: 1, y: -2, z: 3 });
   });
 });
 

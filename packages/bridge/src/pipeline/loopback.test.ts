@@ -93,9 +93,9 @@ describe('loopback: fake iFacialMocap phone → bridge → fake VNyan', () => {
       { k: 'EyeBlinkLeft', v: 0.8 },
       { k: 'JawOpen', v: 0.25 },
     ]);
-    // iFM (rx, ry, rz) = (10, −20, 5) → canonical (yaw 20, pitch −10, roll 5) → VTS (x, y, z).
+    // iFM (rx, ry, rz) = (10, −20, 5) → canonical (yaw 20, pitch −10, roll 5) → VTS (x = yaw, y = −pitch, z = roll).
     expect(frame.Rotation.x).toBeCloseTo(20, 6);
-    expect(frame.Rotation.y).toBeCloseTo(-10, 6);
+    expect(frame.Rotation.y).toBeCloseTo(10, 6);
     expect(frame.Rotation.z).toBeCloseTo(5, 6);
     expect(frame.Position.z).toBeCloseTo(55, 6);
     expect(frame.EyeLeft).toEqual({ x: 4, y: 5, z: 6 });
