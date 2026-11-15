@@ -26,6 +26,8 @@ export interface TrackingFrame {
   blendshapes: Record<string, number>;
   head: HeadPose;
   faceFound: boolean;
+  /** Eye rotations in the source protocol's own units; passed through untouched. */
+  eyes?: { left: Vec3; right: Vec3 };
   /** Receive time, ms since epoch. */
   t: number;
 }

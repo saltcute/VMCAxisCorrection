@@ -2,6 +2,23 @@ import { z } from 'zod';
 
 const port = z.number().int().min(1).max(65535);
 
+/**
+ * Per-axis sign flips applied on top of a protocol's built-in axis mapping. The mappings are
+ * best guesses until verified live; flips let a wrong sign be fixed from the UI.
+ */
+export const AxisFlipsSchema = z
+  .object({
+    posX: z.boolean().default(false),
+    posY: z.boolean().default(false),
+    posZ: z.boolean().default(false),
+    yaw: z.boolean().default(false),
+    pitch: z.boolean().default(false),
+    roll: z.boolean().default(false),
+  })
+  .prefault({});
+
+export type AxisFlips = z.infer<typeof AxisFlipsSchema>;
+
 export const SourceConfigSchema = z
   .object({
     /** Which phone app the bridge receives from. */
@@ -12,6 +29,7 @@ export const SourceConfigSchema = z
     ifmPort: port.default(49983),
     /** VTS input: local UDP port the phone streams to (must differ from output.vtsPort). */
     vtsReceivePort: port.default(21413),
+    flip: AxisFlipsSchema,
   })
   .prefault({});
 
@@ -25,6 +43,7 @@ export const OutputConfigSchema = z
     vmcPort: port.default(39540),
     /** Multiplier applied to emitted head position (bridge-internal unit is metres). */
     positionScale: z.number().positive().max(1000).default(1),
+    flip: AxisFlipsSchema,
   })
   .prefault({});
 
