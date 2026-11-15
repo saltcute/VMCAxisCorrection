@@ -55,6 +55,17 @@ export function buildFrame(
     };
   }
   const f = scale(forward, 1 / leanDistance);
+  // The phone has to face the user, so any lean toward the monitor brings the head closer to it
+  // (f has a −z component unless the phone is turned more than 90°). Moving away means the user
+  // leaned back, or started the routine while leaning.
+  if (f[2] >= 0) {
+    return {
+      ok: false,
+      leanDistance,
+      reason:
+        'The lean moved away from the phone. Sit normally first, then lean toward the monitor.',
+    };
+  }
 
   let lPrime: Vec3;
   if (p2) {
@@ -63,7 +74,15 @@ export function buildFrame(
       return { ok: false, leanDistance, reason: 'Left lean too small' };
     }
   } else {
-    lPrime = cross(cross(PHONE_RIGHT, f), f);
+    const up = cross(PHONE_RIGHT, f);
+    if (norm(up) < minPerp) {
+      return {
+        ok: false,
+        leanDistance,
+        reason: "Forward lean runs along the phone's horizontal edge; use three-point mode",
+      };
+    }
+    lPrime = cross(up, f);
   }
 
   const ortho = sub(lPrime, scale(f, dot(lPrime, f)));
@@ -72,9 +91,7 @@ export function buildFrame(
     return {
       ok: false,
       leanDistance,
-      reason: p2
-        ? 'Left lean is nearly parallel to the forward lean'
-        : "Forward lean runs along the phone's horizontal edge; use three-point mode",
+      reason: 'Left lean is nearly parallel to the forward lean',
     };
   }
   const l = scale(ortho, 1 / orthoNorm);

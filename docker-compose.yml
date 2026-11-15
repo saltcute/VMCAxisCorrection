@@ -1,0 +1,26 @@
+services:
+  offaxis-bridge:
+    build: .
+    image: offaxis-bridge:latest
+    container_name: offaxis-bridge
+    # Host networking: the phone protocols reply to whichever address/port asked, which breaks
+    # behind Docker's NAT.
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      BIND_HOST: 0.0.0.0
+      UI_PORT: 8787
+      CONFIG_DIR: /data
+      HOTKEY_ENABLED: "false"
+      LOG_LEVEL: info
+      TZ: America/Toronto
+      # Owner of ./data inside the container (Unraid: 99/100).
+      PUID: 1000
+      PGID: 1000
+    volumes:
+      - ./data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8787/api/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3

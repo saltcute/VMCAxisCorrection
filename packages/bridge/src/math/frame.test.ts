@@ -175,14 +175,23 @@ describe('buildFrame + correct', () => {
     expect(res.ok).toBe(false);
   });
 
+  it('rejects a lean away from the phone', () => {
+    const r = rig({ yaw: 30, pitch: 10, roll: 0 });
+    const res = buildFrame(r.toPhone([0, 0, 0]), r.toPhone([0, 0, -0.1]), null, {
+      minLeanDistance: 0.05,
+    });
+    expect(res.ok).toBe(false);
+  });
+
   it('rejects a left lean parallel to the forward lean', () => {
-    const res = buildFrame([0, 0, 0.5], [0, 0, 0.4], [0, 0, 0.42], { minLeanDistance: 0.05 });
+    const res = buildFrame([0, 0, 0.5], [0, 0, 0.4], [0, 0, 0.38], { minLeanDistance: 0.05 });
     expect(res.ok).toBe(false);
   });
 
   it('rejects a forward lean along the phone x axis in two-point mode', () => {
-    const res = buildFrame([0, 0, 0.5], [0.1, 0, 0.5], null, { minLeanDistance: 0.05 });
+    const res = buildFrame([0, 0, 0.5], [0.1, 0, 0.495], null, { minLeanDistance: 0.05 });
     expect(res.ok).toBe(false);
+    expect(!res.ok && res.reason).toMatch(/horizontal edge/);
   });
 });
 
