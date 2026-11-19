@@ -57,8 +57,9 @@ npm workspaces, ESM throughout, Node 22+.
 - **User frame:** x = the user's left, y = up, z = forward toward the monitor. `R` (phone → user)
   has rows `[left; up; forward]`. A straight-on phone is `R_STRAIGHT = diag(-1, 1, -1)`.
 - **Euler angles:** `H = Ry(yaw)·Rx(pitch)·Rz(roll)`. Signs are documented in `math/euler.ts`.
-- **Correction:** `p' = R(p − P0)`, `D = qR·H·H0⁻¹·qR⁻¹`. The emitted pose is what a straight-on
-  phone at distance |P0| would report. The identity placement (`default`, never calibrated) must
+- **Correction:** `p' = R(p − P0)`, rotation `Δ = H0⁻¹·H` (in the neutral head's axes, without
+  `R`: iFacialMocap re-centres rotation itself, and conjugating by `qR` leaked roll into pitch).
+  The emitted pose is what a straight-on phone at distance |P0| would report. The identity placement (`default`, never calibrated) must
   stay an exact passthrough, and a test checks this.
 - **Two-point calibration:** assumes the phone has no roll (phone x is level), so
   `l' = (phoneRight × f) × f`. This deliberately differs from the plan's `phoneUp × f`, which is

@@ -38,7 +38,9 @@ function rig(offset: Euler, restInPhone: Vec3 = [0.05, 0.12, 0.55], h0Euler?: Eu
   const R = mulMat(O, R_STRAIGHT);
   const Rt = transpose(R);
   const qR = fromMat3(R);
-  const h0 = h0Euler ? eulerToQuat(h0Euler) : fromAxisAngle([0, 1, 0], 0.3);
+  // At rest the user faces the monitor, so the neutral head's axes are the user frame:
+  // q_R · H0 = q_straight. h0Euler overrides that to model a tracker that re-centres rotation.
+  const h0 = h0Euler ? eulerToQuat(h0Euler) : mul(conj(qR), fromMat3(R_STRAIGHT));
   return {
     R,
     h0,
@@ -152,6 +154,30 @@ describe('buildFrame + correct', () => {
     const out = correct(corr, r.toPhone([0.02, 0.01, 0.06]), r.rotToPhone(g));
     expectVec(out.phonePos, [-0.02, 0.01, dist - 0.06]);
     expectRot(out.phoneRot, mul(mul(conj(qS), g), qS));
+  });
+
+  it('keeps head roll pure when the tracker re-centres rotation itself', () => {
+    // iFacialMocap's own calibration zeroes head rotation (not position): it reports C⁻¹ · H with
+    // C = H0, so the neutral head reads as identity even though the phone is 30° off to the side.
+    const r = rig({ yaw: 30, pitch: 15, roll: 0 });
+    const corrRaw = calibrate(r, false);
+    const recentre = (h: Quat): Quat => mul(conj(r.h0), h);
+    const corrCentred = makeCorrector({ ...corrRaw.placement, h0: recentre(r.h0) });
+    const qS = fromMat3(R_STRAIGHT);
+    for (const s of samples) {
+      const g = eulerToQuat(s.rot);
+      const h = r.rotToPhone(g);
+      expectRot(correct(corrCentred, r.toPhone(s.pos), recentre(h)).userRot, g);
+      expectRot(correct(corrRaw, r.toPhone(s.pos), h).userRot, g);
+    }
+    // Tilting toward the left shoulder 20° comes out as roll only, with no pitch or yaw leaking in.
+    const tilt = mul(mul(qS, eulerToQuat({ yaw: 0, pitch: 0, roll: 20 })), conj(qS));
+    const out = quatToEuler(
+      correct(corrCentred, r.restInPhone, recentre(r.rotToPhone(tilt))).phoneRot,
+    );
+    expect(out.roll).toBeCloseTo(20, 6);
+    expect(out.pitch).toBeCloseTo(0, 6);
+    expect(out.yaw).toBeCloseTo(0, 6);
   });
 
   it('identity placement is an exact passthrough', () => {

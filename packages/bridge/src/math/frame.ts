@@ -119,9 +119,18 @@ export function correctPosition(R: Mat3, p0: Vec3, p: Vec3): Vec3 {
   return mulVec(R, sub(p, p0));
 }
 
-/** D = q_R · H · H0⁻¹ · q_R⁻¹: head change from neutral, expressed in the user frame. */
-export function correctRotation(qR: Quat, h: Quat, h0: Quat): Quat {
-  return mul(mul(mul(qR, h), conj(h0)), conj(qR));
+/**
+ * Δ = H0⁻¹ · H: head change from neutral, in the neutral head's own axes.
+ *
+ * This deliberately ignores R. The user faces the monitor at rest, so the neutral head's axes
+ * already are the user frame, and when the tracker reports camera-relative orientation this equals
+ * q_straight⁻¹ · (q_R · H · H0⁻¹ · q_R⁻¹) · q_straight. It also holds when the tracker re-centres
+ * rotation itself (iFacialMocap's own calibration zeroes head rotation but not position): a
+ * correction applied as C⁻¹ · H cancels out of H0⁻¹ · H, whereas conjugating by q_R would turn the
+ * already-centred axes a second time and leak head roll into pitch.
+ */
+export function correctRotation(h: Quat, h0: Quat): Quat {
+  return mul(conj(h0), h);
 }
 
 /**
@@ -130,17 +139,14 @@ export function correctRotation(qR: Quat, h: Quat, h0: Quat): Quat {
 export interface Corrector {
   placement: Placement;
   R: Mat3;
-  qR: Quat;
   /** Where the neutral head sits for the virtual straight-on phone: (0, 0, |P0|). */
   virtualRest: Vec3;
 }
 
 export function makeCorrector(placement: Placement): Corrector {
-  const qR = fromMat3(placement.R);
   return {
     placement,
     R: placement.R,
-    qR,
     virtualRest: [0, 0, norm(placement.p0)],
   };
 }
@@ -159,17 +165,17 @@ export interface CorrectedPose {
 /**
  * Correct one frame. The emitted pose is what a phone straight in front of the user, at the same
  * distance as the real one, would report: position R_straightᵀ·p' + (0, 0, |P0|) and rotation
- * q_straight⁻¹ · D · q_straight. At rest that is the head centred and facing the phone. The
+ * H0⁻¹ · H. At rest that is the head centred and facing the phone. The
  * identity placement (R = R_straight, P0 = 0, H0 = 1) is an exact passthrough.
  */
 export function correct(c: Corrector, pos: Vec3, rot: Quat): CorrectedPose {
   const userPos = correctPosition(c.R, c.placement.p0, pos);
-  const userRot = correctRotation(c.qR, rot, c.placement.h0);
+  const phoneRot = correctRotation(rot, c.placement.h0);
   return {
     userPos,
-    userRot,
+    userRot: mul(mul(Q_STRAIGHT, phoneRot), conj(Q_STRAIGHT)),
     phonePos: add(mulVec(R_STRAIGHT_T, userPos), c.virtualRest),
-    phoneRot: mul(mul(conj(Q_STRAIGHT), userRot), Q_STRAIGHT),
+    phoneRot,
   };
 }
 
