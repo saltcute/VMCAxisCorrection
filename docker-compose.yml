@@ -9,7 +9,7 @@ services:
     restart: unless-stopped
     environment:
       BIND_HOST: 0.0.0.0
-      UI_PORT: 8787
+      UI_PORT: 8789
       CONFIG_DIR: /data
       HOTKEY_ENABLED: "false"
       LOG_LEVEL: info
