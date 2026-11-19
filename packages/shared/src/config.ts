@@ -56,6 +56,11 @@ export const CalibrationConfigSchema = z
   .object({
     /** Add the optional "lean left" step (P2) instead of assuming the phone is upright. */
     threePoint: z.boolean().default(false),
+    /**
+     * Level the frame from the curve of each lean instead of its straight line. A natural lean
+     * dips the head; without this, that dip tilts the whole frame.
+     */
+    levelFromArc: z.boolean().default(true),
     /** Max position standard deviation (metres) over the window to count as holding still. */
     stillnessThreshold: z.number().positive().max(0.1).default(0.004),
     stillnessWindowMs: z.number().int().min(100).max(3000).default(400),

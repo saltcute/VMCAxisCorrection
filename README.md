@@ -8,7 +8,8 @@ This bridge sits between the phone and VNyan and fixes that:
 
 1. It receives raw ARKit tracking from the phone (iFacialMocap, or the VTube Studio iPhone app).
 2. A short guided calibration finds your forward axis as the phone sees it: sit normally, then
-   lean straight forward, and optionally lean left as well.
+   lean forward, and optionally lean left as well. Lean naturally: the dip of your head during
+   the lean is measured from its curve and removed, so you don't have to hold your height.
 3. It rotates every frame into your own frame and re-sends it to VNyan as if it came from a phone
    straight in front of you. Blendshapes pass through untouched.
 
@@ -30,7 +31,7 @@ npm start
 3. In VNyan, set the phone tracker to **VTube Studio** with phone IP `127.0.0.1`. The bridge
    answers on UDP 21412 like the VTS iPhone app does. Don't also run VNyan's iFacialMocap mode,
    because the bridge already uses UDP 49983.
-4. Press **Calibrate**. Sit normally and hold still, then lean straight toward your monitor and hold.
+4. Press **Calibrate**. Sit normally and hold still, then lean toward your monitor and hold.
 5. Check the Live view: a forward lean should now draw a straight vertical line.
 
 For an OBS dock, add a custom browser dock pointing at <http://localhost:8787/dock>.

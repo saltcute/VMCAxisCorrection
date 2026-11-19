@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { eulerToQuat, quatToEuler } from './euler.js';
 import {
   buildFrame,
+  buildLevelledFrame,
   correct,
   identityPlacement,
   makeCorrector,
@@ -257,5 +258,91 @@ describe('mat3/quat helpers', () => {
     expectRot(fromMat3(toMat3(q)), q);
     const m: Mat3 = toMat3(q);
     expectVec(mulVec(m, [1, 2, 3]), rotate(q, [1, 2, 3]));
+  });
+});
+
+describe('buildLevelledFrame', () => {
+  const opts = { minLeanDistance: 0.05 };
+  /** Rest jitter, then a lean along a user-frame path, then a hold at its end. */
+  function trace(r: ReturnType<typeof rig>, at: (k: number) => Vec3, steps = 30): Vec3[] {
+    const out: Vec3[] = [];
+    for (let i = 0; i < 10; i++) out.push(r.toPhone([0, 0, 0]));
+    for (let i = 1; i <= steps; i++) out.push(r.toPhone(at(i / steps)));
+    for (let i = 0; i < 20; i++) out.push(r.toPhone(at(1)));
+    return out;
+  }
+  const angleR = (a: Mat3, b: Mat3) => angleBetween(fromMat3(a), fromMat3(b)) / D2R;
+
+  it('levels a forward lean that dips along a parabola exactly', () => {
+    const r = rig({ yaw: 30, pitch: 15, roll: 0 });
+    // 10 cm forward, dropping 2.5 cm by the end: the chord points 14° down.
+    const at = (k: number): Vec3 => [0, -0.025 * k * k, 0.1 * k];
+    const p0 = r.toPhone([0, 0, 0]);
+    const p1 = r.toPhone(at(1));
+    const chord = buildFrame(p0, p1, null, opts);
+    if (!chord.ok) throw new Error(chord.reason);
+    expect(angleR(chord.R, r.R)).toBeGreaterThan(10);
+    const res = buildLevelledFrame(p0, p1, null, { forward: trace(r, at), left: null }, opts);
+    if (!res.ok) throw new Error(res.reason);
+    expect(res.levelNote).toBeUndefined();
+    res.R.forEach((v, i) => {
+      expect(Math.abs(v - r.R[i]!)).toBeLessThan(EPS);
+    });
+    expect(res.leanDipDeg).toBeCloseTo(Math.atan2(0.025, 0.1) / D2R, 6);
+  });
+
+  it('levels hip-hinged forward and left leans in three-point mode', () => {
+    const r = rig({ yaw: -40, pitch: 20, roll: 8 });
+    const hinge = 0.7;
+    const fwd = (k: number): Vec3 => {
+      const th = 0.17 * k;
+      return [0, -hinge * (1 - Math.cos(th)), hinge * Math.sin(th)];
+    };
+    const left = (k: number): Vec3 => {
+      const th = 0.14 * k;
+      return [hinge * Math.sin(th), -hinge * (1 - Math.cos(th)), 0];
+    };
+    const p0 = r.toPhone([0, 0, 0]);
+    const res = buildLevelledFrame(
+      p0,
+      r.toPhone(fwd(1)),
+      r.toPhone(left(1)),
+      { forward: trace(r, fwd), left: trace(r, left) },
+      opts,
+    );
+    if (!res.ok) throw new Error(res.reason);
+    expect(res.levelNote).toBeUndefined();
+    // A circle is only nearly a parabola over a lean this short.
+    expect(angleR(res.R, r.R)).toBeLessThan(0.1);
+    expect(res.leanDipDeg).toBeCloseTo(0.17 / 2 / D2R, 1);
+  });
+
+  it('leaves a straight lean unchanged', () => {
+    const r = rig({ yaw: 30, pitch: 0, roll: 0 });
+    const at = (k: number): Vec3 => [0, 0, 0.1 * k];
+    const p0 = r.toPhone([0, 0, 0]);
+    const res = buildLevelledFrame(
+      p0,
+      r.toPhone(at(1)),
+      null,
+      { forward: trace(r, at), left: null },
+      opts,
+    );
+    if (!res.ok) throw new Error(res.reason);
+    expect(angleR(res.R, r.R)).toBeLessThan(1e-6);
+    expect(res.leanDipDeg).toBeCloseTo(0, 6);
+  });
+
+  it('falls back to the chord when the lean was too quick to trace', () => {
+    const r = rig({ yaw: 30, pitch: 0, roll: 0 });
+    const at = (k: number): Vec3 => [0, -0.02 * k * k, 0.1 * k];
+    const p0 = r.toPhone([0, 0, 0]);
+    const p1 = r.toPhone(at(1));
+    const res = buildLevelledFrame(p0, p1, null, { forward: trace(r, at, 2), left: null }, opts);
+    const chord = buildFrame(p0, p1, null, opts);
+    if (!res.ok || !chord.ok) throw new Error('expected ok');
+    expect(res.levelNote).toMatch(/too quick/);
+    expect(res.leanDipDeg).toBeNull();
+    expect(res.R).toEqual(chord.R);
   });
 });

@@ -57,11 +57,20 @@ function setup(overrides: Partial<Config['calibration']> = {}) {
       cal.tick();
     }
   };
+  /** Follow a user-frame path `at(0..1)` over `ms`. */
+  const path = (at: (k: number) => Vec3, ms: number) => {
+    const steps = Math.ceil(ms / 16);
+    for (let i = 1; i <= steps; i++) {
+      now += 16;
+      cal.push({ t: now, pos: toPhone(at(i / steps)), rot: ROT, faceFound: true });
+      cal.tick();
+    }
+  };
   const advance = (ms: number) => {
     now += ms;
     cal.tick();
   };
-  return { cal, saved, results, hold, move, advance, R };
+  return { cal, saved, results, hold, move, path, advance, R };
 }
 
 describe('Calibrator', () => {
@@ -102,6 +111,52 @@ describe('Calibrator', () => {
     t.hold([0.09, 0, 0], 600);
     expect(t.results[0]?.ok).toBe(true);
     expect(t.saved[0]?.threePoint).toBe(true);
+  });
+
+  describe('a natural, hip-hinged lean that dips the head', () => {
+    const hinge = 0.6;
+    const arc = (th: number, sideways = false): Vec3 => {
+      const along = hinge * Math.sin(th);
+      const drop = -hinge * (1 - Math.cos(th));
+      return sideways ? [along, drop, 0] : [0, drop, along];
+    };
+    const maxErr = (a: number[], b: number[]) =>
+      Math.max(...a.map((v, i) => Math.abs(v - (b[i] as number))));
+
+    function run(overrides: Partial<Config['calibration']>) {
+      const t = setup(overrides);
+      t.cal.start();
+      t.hold([0, 0, 0], 600);
+      t.path((k) => arc(0.25 * k), 500);
+      t.hold(arc(0.25), 600);
+      if (overrides.threePoint) {
+        // Sit back up, then lean left: the way back must not disturb the left lean's fit.
+        t.path((k) => arc(0.25 * (1 - k)), 400);
+        t.path((k) => arc(0.18 * k, true), 500);
+        t.hold(arc(0.18, true), 600);
+      }
+      expect(t.results[0]?.ok).toBe(true);
+      return t;
+    }
+
+    it('is levelled from the curve', () => {
+      const t = run({});
+      expect(t.results[0]?.levelNote).toBeUndefined();
+      expect(t.results[0]?.leanDipDeg).toBeCloseTo(7.2, 0);
+      expect(maxErr(t.saved[0]?.R ?? [], t.R)).toBeLessThan(0.01);
+    });
+
+    it('is levelled from both curves in three-point mode', () => {
+      const t = run({ threePoint: true });
+      expect(t.results[0]?.levelNote).toBeUndefined();
+      expect(maxErr(t.saved[0]?.R ?? [], t.R)).toBeLessThan(0.01);
+    });
+
+    it('tilts the frame when levelling is off', () => {
+      const t = run({ levelFromArc: false });
+      expect(t.results[0]?.leanDipDeg).toBeUndefined();
+      expect(maxErr(t.saved[0]?.R ?? [], t.R)).toBeGreaterThan(0.1);
+    });
   });
 
   it('times out a step and keeps the old calibration', () => {

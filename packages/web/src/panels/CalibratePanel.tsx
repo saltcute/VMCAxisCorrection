@@ -85,6 +85,8 @@ export function CalibratePanel({ s, compact = false }: { s: BridgeState; compact
               <strong>Calibrated</strong> “{r.placement}” · phone yaw {deg(r.yawOffsetDeg)}, pitch{' '}
               {deg(r.pitchOffsetDeg)}
               {!compact && <>, roll {deg(r.rollOffsetDeg)}</>} · lean {cm(r.leanDistance)}
+              {r.leanDipDeg !== undefined && <> · dip {deg(r.leanDipDeg)} levelled</>}
+              {r.levelNote && !compact && <> · not levelled: {r.levelNote}</>}
             </>
           ) : (
             <>

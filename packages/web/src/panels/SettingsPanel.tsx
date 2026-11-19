@@ -71,6 +71,12 @@ const SECTIONS: { title: string; fields: Field[]; note?: string }[] = [
     fields: [
       { path: 'calibration.threePoint', label: 'Three-point mode (also lean left)', kind: 'bool' },
       {
+        path: 'calibration.levelFromArc',
+        label: 'Level from the lean’s curve',
+        kind: 'bool',
+        hint: 'Lean naturally: the head’s dip is measured and removed. Off: lean at a constant height.',
+      },
+      {
         path: 'calibration.stillnessThreshold',
         label: 'Stillness threshold',
         kind: 'number',

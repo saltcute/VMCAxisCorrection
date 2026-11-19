@@ -64,6 +64,11 @@ npm workspaces, ESM throughout, Node 22+.
 - **Two-point calibration:** assumes the phone has no roll (phone x is level), so
   `l' = (phoneRight × f) × f`. This deliberately differs from the plan's `phoneUp × f`, which is
   only exact when yaw or pitch is zero.
+- **Levelling (`calibration.levelFromArc`, on by default):** a natural lean hinges below the head,
+  so the head dips and the chord P0 → P1 points down. `buildLevelledFrame` records each lean's
+  path and uses its 3D tangent at P0 (quadratic fit, iterated to a fixed point) instead of the
+  chord. It assumes the user sits upright at rest, and falls back to the chord, with a
+  `levelNote`, when the path is too quick, noisy or curved.
 - **Protocol mappings:** each protocol's mapping to the canonical frame lives in `protocols/*.ts`
   and is marked UNVERIFIED until it has been tested live. Don't "fix" a sign without a live test.
   Users correct signs with `source.flip` / `output.flip`.

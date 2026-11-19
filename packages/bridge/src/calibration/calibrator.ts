@@ -9,7 +9,7 @@ import type {
   Vec3,
 } from '@offaxis/shared';
 import { createLogger } from '../log.js';
-import { buildFrame, phoneOffset } from '../math/frame.js';
+import { buildFrame, buildLevelledFrame, phoneOffset } from '../math/frame.js';
 import { norm, sub } from '../math/vec.js';
 import { StillnessWindow } from './stillness.js';
 
@@ -18,13 +18,15 @@ const log = createLogger('calibration');
 const PROMPTS: Record<CalibrationStep, string> = {
   idle: 'Press Calibrate to start',
   waitStillRest: 'Sit normally and look at your monitor',
-  waitLean: 'Lean straight forward toward your monitor and hold',
+  waitLean: 'Lean forward toward your monitor and hold',
   waitLeanLeft: 'Sit back, then lean to your left and hold',
 };
 
 /** Frames older than this mean the phone stream is gone; the step timer pauses. */
 const STALE_MS = 500;
 const TICK_MS = 100;
+/** Cap on recorded lean samples (about 30 s at 60 fps); a step times out well before that. */
+const MAX_PATH = 2000;
 
 export interface CalibrationInput {
   t: number;
@@ -61,6 +63,9 @@ export class Calibrator extends EventEmitter<CalibratorEvents> {
   private p0: Vec3 | null = null;
   private h0: Quat | null = null;
   private p1: Vec3 | null = null;
+  /** Positions recorded during each lean, for levelling from the lean's curve. */
+  private forwardPath: Vec3[] = [];
+  private leftPath: Vec3[] = [];
   private lastResult: CalibrationResult | null = null;
   private timer: NodeJS.Timeout | null = null;
   private threePoint = false;
@@ -89,6 +94,8 @@ export class Calibrator extends EventEmitter<CalibratorEvents> {
     }
     this.threePoint = this.cfg.threePoint;
     this.p0 = this.h0 = this.p1 = null;
+    this.forwardPath = [];
+    this.leftPath = [];
     this.goto('waitStillRest');
     this.timer ??= setInterval(() => this.tick(), TICK_MS);
     this.timer.unref?.();
@@ -131,6 +138,13 @@ export class Calibrator extends EventEmitter<CalibratorEvents> {
       return;
     }
     this.window.push(f.t, f.pos);
+    const path =
+      this.step === 'waitLean'
+        ? this.forwardPath
+        : this.step === 'waitLeanLeft'
+          ? this.leftPath
+          : null;
+    if (path && path.length < MAX_PATH) path.push(f.pos);
     this.evaluate(f);
   }
 
@@ -208,7 +222,17 @@ export class Calibrator extends EventEmitter<CalibratorEvents> {
   private complete(p2: Vec3 | null) {
     const p0 = this.p0 as Vec3;
     const at = new Date(this.now()).toISOString();
-    const res = buildFrame(p0, this.p1 as Vec3, p2, { minLeanDistance: this.cfg.minLeanDistance });
+    const opts = { minLeanDistance: this.cfg.minLeanDistance };
+    const p1 = this.p1 as Vec3;
+    const res = this.cfg.levelFromArc
+      ? buildLevelledFrame(
+          p0,
+          p1,
+          p2,
+          { forward: this.forwardPath, left: p2 ? this.leftPath : null },
+          opts,
+        )
+      : { ...buildFrame(p0, p1, p2, opts), leanDipDeg: null };
     if (!res.ok) {
       this.finish({ ok: false, reason: res.reason, leanDistance: res.leanDistance, at });
       return;
@@ -227,6 +251,8 @@ export class Calibrator extends EventEmitter<CalibratorEvents> {
       pitchOffsetDeg: off.pitch,
       rollOffsetDeg: off.roll,
       leanDistance: res.leanDistance,
+      ...(res.leanDipDeg !== null && { leanDipDeg: res.leanDipDeg }),
+      ...(res.levelNote && { levelNote: res.levelNote }),
       placement,
       at,
     });

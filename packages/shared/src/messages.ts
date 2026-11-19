@@ -14,6 +14,10 @@ export interface CalibrationResult {
   rollOffsetDeg?: number;
   /** |P1 − P0| in metres. */
   leanDistance?: number;
+  /** How far the forward lean dipped below level, degrees, when the frame was levelled from it. */
+  leanDipDeg?: number;
+  /** Why levelling from the lean's curve was skipped (the straight line was used instead). */
+  levelNote?: string;
   placement?: string;
   at: string;
 }
